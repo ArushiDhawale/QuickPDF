@@ -14,10 +14,6 @@ import { Dropzone } from "../../components/pdf/Dropzone";
 import { getPdfThumbnails, organizePdf } from "../../services/pdf.service";
 import { formatFileSize } from "../../utils/formatters";
 
-// ─── Thumbnail Card ──────────────────────────────────────────────────────────
-// Intentionally a plain div — no Framer Motion layout/layoutId.
-// Any layout animation on the draggable element interrupts the HTML5 drag
-// session because Framer continuously re-measures + repositions the node.
 function ThumbnailCard({
   item,
   pageNumber,
@@ -30,21 +26,18 @@ function ThumbnailCard({
   onDragOver,
 }) {
   return (
-    // Outer wrapper: only used for the AnimatePresence exit animation (delete).
-    // It must NOT have layout/layoutId so it never moves while dragging.
     <motion.div
       key={item.id}
       initial={{ opacity: 0, scale: 0.9 }}
       animate={{ opacity: 1, scale: 1 }}
       exit={{ opacity: 0, scale: 0.8, transition: { duration: 0.15 } }}
       transition={{ duration: 0.2 }}
-      // ↓ No `layout` or `layoutId` here — that's the entire fix
+      
     >
-      {/* Inner div owns all drag behaviour */}
+      
       <div
         draggable={!isProcessing}
         onDragStart={(e) => {
-          // Store a transparent ghost so the card doesn't clone itself weirdly
           e.dataTransfer.effectAllowed = "move";
           onDragStart();
         }}
@@ -71,7 +64,6 @@ function ThumbnailCard({
             : "cursor-grab active:cursor-grabbing"
         }`}
       >
-        {/* Drop-target highlight ring — CSS only, no JS animation */}
         <div
           className={`relative rounded-xl overflow-hidden border transition-all duration-150 ${
             isDragOver
@@ -85,8 +77,7 @@ function ThumbnailCard({
             className="w-full h-auto block pointer-events-none"
             draggable={false}
           />
-
-          {/* Drag handle — top-left */}
+          {/* Drag handle — top-left */}  
           <div className="absolute top-1.5 left-1.5 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
             <div className="p-1 rounded bg-black/60 backdrop-blur-sm">
               <GripVertical className="w-3 h-3 text-white/70" />
@@ -120,7 +111,6 @@ function ThumbnailCard({
   );
 }
 
-// ─── Main Page ───────────────────────────────────────────────────────────────
 export function Organize() {
   const [file, setFile] = useState(null);
   const [thumbnails, setThumbnails] = useState([]);
@@ -132,7 +122,6 @@ export function Organize() {
   const dragItem = useRef(null);
   const dragOverItem = useRef(null);
 
-  // ── File upload ──────────────────────────────────────────────────────────
   const handleFilesSelected = useCallback(async (selectedFiles) => {
     const selectedFile = selectedFiles[0];
     if (!selectedFile) return;
@@ -152,14 +141,15 @@ export function Organize() {
       setThumbnails(pages);
     } catch (err) {
       console.error(err);
-      setError("Could not read the PDF. It may be encrypted, corrupted, or empty.");
+      setError(
+        "Could not read the PDF. It may be encrypted, corrupted, or empty.",
+      );
       setFile(null);
     } finally {
       setIsLoading(false);
     }
   }, []);
 
-  // ── Drag handlers ────────────────────────────────────────────────────────
   const handleDragStart = useCallback((index) => {
     dragItem.current = index;
   }, []);
@@ -193,12 +183,10 @@ export function Organize() {
     dragOverItem.current = null;
   }, []);
 
-  // ── Page removal ─────────────────────────────────────────────────────────
   const handleRemovePage = useCallback((id) => {
     setThumbnails((prev) => prev.filter((t) => t.id !== id));
   }, []);
 
-  // ── Reset ────────────────────────────────────────────────────────────────
   const handleReset = useCallback(() => {
     setFile(null);
     setThumbnails([]);
@@ -208,7 +196,6 @@ export function Organize() {
     setDragOverIndex(null);
   }, []);
 
-  // ── Download ─────────────────────────────────────────────────────────────
   const handleDownload = useCallback(async () => {
     if (!file || thumbnails.length === 0) return;
     setIsProcessing(true);
@@ -231,7 +218,6 @@ export function Organize() {
     }
   }, [file, thumbnails]);
 
-  // ────────────────────────────────────────────────────────────────────────
   return (
     <div className="max-w-5xl mx-auto py-12 px-4 sm:px-6">
       {/* Header */}
@@ -239,7 +225,9 @@ export function Organize() {
         <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-zinc-900 border border-white/10 text-white mb-4">
           <LayoutGrid className="w-8 h-8" />
         </div>
-        <h1 className="text-4xl font-extrabold text-white mb-4">Organize PDF</h1>
+        <h1 className="text-4xl font-extrabold text-white mb-4">
+          Organize PDF
+        </h1>
         <p className="text-lg text-zinc-400 max-w-xl mx-auto">
           Drag to reorder pages, hover a thumbnail to delete it, then download
           your reorganized document.
@@ -248,7 +236,6 @@ export function Organize() {
 
       {/* Main card */}
       <div className="bg-[#0a0a0a] rounded-2xl border border-white/10 p-6 md:p-8 shadow-2xl">
-
         {/* Error banner */}
         <AnimatePresence>
           {error && (
@@ -280,20 +267,25 @@ export function Organize() {
           <div className="flex flex-col items-center justify-center py-24 gap-4 text-zinc-400">
             <Loader2 className="w-10 h-10 animate-spin text-white" />
             <p className="text-sm font-medium">Rendering page thumbnails…</p>
-            <p className="text-xs text-zinc-600">Large files may take a moment.</p>
+            <p className="text-xs text-zinc-600">
+              Large files may take a moment.
+            </p>
           </div>
         )}
 
         {/* Grid view */}
         {!isLoading && file && thumbnails.length > 0 && (
           <div className="space-y-6">
-
             {/* Toolbar */}
             <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 p-4 bg-zinc-900/50 border border-white/5 rounded-xl">
               <div className="flex flex-col">
-                <span className="font-medium text-zinc-200 truncate max-w-xs">{file.name}</span>
+                <span className="font-medium text-zinc-200 truncate max-w-xs">
+                  {file.name}
+                </span>
                 <span className="text-xs text-zinc-500 mt-0.5">
-                  {thumbnails.length} {thumbnails.length === 1 ? "page" : "pages"} · {formatFileSize(file.size)}
+                  {thumbnails.length}{" "}
+                  {thumbnails.length === 1 ? "page" : "pages"} ·{" "}
+                  {formatFileSize(file.size)}
                 </span>
               </div>
               <button
@@ -307,7 +299,8 @@ export function Organize() {
             </div>
 
             <p className="text-xs text-zinc-600 text-center">
-              Drag thumbnails to reorder · Hover a page to reveal the delete button
+              Drag thumbnails to reorder · Hover a page to reveal the delete
+              button
             </p>
 
             {/* The grid — plain CSS, no Framer layout */}
@@ -334,7 +327,8 @@ export function Organize() {
             <div className="flex flex-col sm:flex-row items-center justify-between gap-4 border-t border-white/10 pt-6">
               <p className="text-xs text-zinc-600 text-center sm:text-left">
                 Output will contain {thumbnails.length}{" "}
-                {thumbnails.length === 1 ? "page" : "pages"} in the order shown above.
+                {thumbnails.length === 1 ? "page" : "pages"} in the order shown
+                above.
               </p>
               <Button
                 onClick={handleDownload}
@@ -366,7 +360,9 @@ export function Organize() {
           >
             <FileWarning className="w-10 h-10" />
             <p className="font-medium">All pages removed</p>
-            <p className="text-sm text-zinc-600">Nothing left to download. Reset to start over.</p>
+            <p className="text-sm text-zinc-600">
+              Nothing left to download. Reset to start over.
+            </p>
             <Button variant="outline" onClick={handleReset} className="mt-2">
               <RotateCcw className="w-4 h-4 mr-2" />
               Reset

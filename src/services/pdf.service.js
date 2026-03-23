@@ -1,41 +1,33 @@
 import { PDFDocument, rgb, degrees, StandardFonts } from "pdf-lib";
 import * as pdfjsLib from "pdfjs-dist";
 
-// Vite resolves this at build time from node_modules — no CDN dependency
+// Let Vite point pdf.js at the bundled worker for us.
 pdfjsLib.GlobalWorkerOptions.workerSrc = new URL(
   "pdfjs-dist/build/pdf.worker.min.mjs",
   import.meta.url,
 ).toString();
 import JSZip from "jszip";
 
-// merging multiple PDFs into one
 export const mergePdfs = async (files) => {
   if (!files || files.length === 0) {
     throw new Error("No files provided for merging.");
   }
 
-  // created new PDFDocument
   const mergedPdf = await PDFDocument.create();
 
   for (const file of files) {
-    // reading the given file
     const arrayBuffer = await file.arrayBuffer();
-    // loading the file
     const pdf = await PDFDocument.load(arrayBuffer);
-    // getting the page indices of the loaded PDF and copying them to the merged PDF
     const pageIndices = pdf.getPageIndices();
-    // copying the pages from the loaded PDF to the merged PDF
     const copiedPages = await mergedPdf.copyPages(pdf, pageIndices);
-    // adding the copied pages to the merged PDF
     copiedPages.forEach((page) => mergedPdf.addPage(page));
   }
-  // saving the merged PDF and returning it as a Blob
+
   const pdfBytes = await mergedPdf.save();
   const blob = new Blob([pdfBytes], { type: "application/pdf" });
   return blob;
 };
 
-// splitting a PDF into a new PDF based on a page range
 export const splitPdf = async (file, startPage, endPage) => {
   if (!file) throw new Error("Please provide a PDF file.");
 
@@ -43,67 +35,57 @@ export const splitPdf = async (file, startPage, endPage) => {
   const pdf = await PDFDocument.load(arrayBuffer);
   const totalPages = pdf.getPageCount();
 
-  // Validate the range (Users think in 1-index, pdf-lib uses 0-index)
+  // The UI is 1-based, but pdf-lib expects 0-based page indexes.
   if (startPage < 1 || endPage > totalPages || startPage > endPage) {
     throw new Error(
       `Invalid range. Please select between page 1 and ${totalPages}.`,
     );
   }
 
-  // Create a new empty PDF
   const splitPdfDoc = await PDFDocument.create();
-
-  // Create an array of the page indices we want to extract
-  // Example: user wants pages 2 to 4. Array becomes [1, 2, 3] (0-indexed)
   const indicesToExtract = Array.from(
     { length: endPage - startPage + 1 },
     (_, i) => startPage - 1 + i,
   );
 
-  // Copy and add the pages
   const copiedPages = await splitPdfDoc.copyPages(pdf, indicesToExtract);
   copiedPages.forEach((page) => splitPdfDoc.addPage(page));
 
-  // Save and return as a Blob
   const pdfBytes = await splitPdfDoc.save();
   return new Blob([pdfBytes], { type: "application/pdf" });
 };
 
-// Helper function to quickly get the page count for the UI without saving
 export const getPdfPageCount = async (file) => {
   const arrayBuffer = await file.arrayBuffer();
   const pdf = await PDFDocument.load(arrayBuffer);
   return pdf.getPageCount();
 };
 
-// adding a diagonal watermark to each page of a PDF
 export const addWatermark = async (file, watermarkText = "CONFIDENTIAL") => {
   if (!file) throw new Error("Please provide a PDF file.");
 
   const arrayBuffer = await file.arrayBuffer();
   const pdfDoc = await PDFDocument.load(arrayBuffer);
 
-  // Embed a standard font so we don't have to load external font files
+  // Stick with a built-in font so we don't need extra assets.
   const helveticaFont = await pdfDoc.embedFont(StandardFonts.HelveticaBold);
   const pages = pdfDoc.getPages();
 
-  // Loop through every page and stamp it
   pages.forEach((page) => {
     const { width, height } = page.getSize();
     const fontSize = 60;
 
-    // Calculate the width of the text so we can perfectly center it
     const textWidth = helveticaFont.widthOfTextAtSize(watermarkText, fontSize);
     const textHeight = helveticaFont.heightAtSize(fontSize);
 
     page.drawText(watermarkText, {
-      x: width / 2 - textWidth / 2, // Center horizontally
-      y: height / 2 - textHeight / 2, // Center vertically
+      x: width / 2 - textWidth / 2,
+      y: height / 2 - textHeight / 2,
       size: fontSize,
       font: helveticaFont,
-      color: rgb(0.5, 0.5, 0.5), // Gray color
-      opacity: 0.3, // 30% opacity so you can read the document underneath
-      rotate: degrees(45), // Diagonal slant
+      color: rgb(0.5, 0.5, 0.5),
+      opacity: 0.3,
+      rotate: degrees(45),
     });
   });
 
@@ -111,7 +93,6 @@ export const addWatermark = async (file, watermarkText = "CONFIDENTIAL") => {
   return new Blob([pdfBytes], { type: "application/pdf" });
 };
 
-// convert various image formats (jpg, png) to PDF with each image on its own page, perfectly sized to fit the page without distortion
 export const imageToPdf = async (files) => {
   if (!files || files.length === 0) {
     throw new Error("No images provided for conversion.");
@@ -123,7 +104,6 @@ export const imageToPdf = async (files) => {
     const arrayBuffer = await file.arrayBuffer();
     let embeddedImage;
 
-    // Detect format and embed accordingly
     if (file.type === "image/jpeg" || file.type === "image/jpg") {
       embeddedImage = await pdfDoc.embedJpg(arrayBuffer);
     } else if (file.type === "image/png") {
@@ -134,13 +114,8 @@ export const imageToPdf = async (files) => {
       );
     }
 
-    // Extract precise dimensions
     const { width, height } = embeddedImage;
-
-    // Create a page matching the exact image dimensions
     const page = pdfDoc.addPage([width, height]);
-
-    // Draw the image filling the entire page
     page.drawImage(embeddedImage, {
       x: 0,
       y: 0,
@@ -153,18 +128,16 @@ export const imageToPdf = async (files) => {
   return new Blob([pdfBytes], { type: "application/pdf" });
 };
 
-
 export const compressWithQuality = async (file, quality = 0.5) => {
   const arrayBuffer = await file.arrayBuffer();
 
-  // Load the document with 'ignoreEncryption' to bypass permission locks
+  // Some PDFs are technically readable but still carry permission flags.
   const pdfDoc = await PDFDocument.load(arrayBuffer, {
     ignoreEncryption: true,
-    // Using a smaller byte range helps prevent browser hangs on 100MB+ files
+    // This keeps very large files from freezing the browser as easily.
     capNumbers: true,
   });
 
-  // Create a brand new document to force a complete re-index of the data
   const compressedDoc = await PDFDocument.create();
   const copiedPages = await compressedDoc.copyPages(
     pdfDoc,
@@ -172,8 +145,7 @@ export const compressWithQuality = async (file, quality = 0.5) => {
   );
   copiedPages.forEach((page) => compressedDoc.addPage(page));
 
-  // The 'useObjectStreams' flag is the secret for large files.
-  // It zips thousands of tiny PDF objects into a few large binary chunks.
+  // Object streams usually save a noticeable amount of space on bigger PDFs.
   const compressedBytes = await compressedDoc.save({
     useObjectStreams: true,
     addDefaultPage: false,
@@ -183,16 +155,13 @@ export const compressWithQuality = async (file, quality = 0.5) => {
   return new Blob([compressedBytes], { type: "application/pdf" });
 };
 
-// Rotate all pages in a PDF
 export const rotatePdf = async (file, rotationAngle) => {
   const arrayBuffer = await file.arrayBuffer();
   const pdfDoc = await PDFDocument.load(arrayBuffer);
   const pages = pdfDoc.getPages();
 
   pages.forEach((page) => {
-    // Get the current rotation of the page (in case it's already rotated)
     const currentRotation = page.getRotation().angle;
-    // Add the new rotation to the existing one
     page.setRotation(degrees(currentRotation + rotationAngle));
   });
 
@@ -205,7 +174,6 @@ export const getPdfThumbnails = async (file) => {
 
   const arrayBuffer = await file.arrayBuffer();
 
-  // pdfjsLib.GlobalWorkerOptions.workerSrc is already set earlier in the file.
   const pdfJsDoc = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
   const totalPages = pdfJsDoc.numPages;
   const thumbnails = [];
@@ -215,7 +183,6 @@ export const getPdfThumbnails = async (file) => {
     const SCALE = 0.3;
     const viewport = page.getViewport({ scale: SCALE });
 
-    // Render into an offscreen canvas
     const canvas = document.createElement("canvas");
     canvas.width = viewport.width;
     canvas.height = viewport.height;
@@ -226,9 +193,9 @@ export const getPdfThumbnails = async (file) => {
     }).promise;
 
     thumbnails.push({
-      // Stable unique id so Framer Motion can track items correctly
+      // Keep the id stable enough for drag/reorder animations.
       id: `page-${pageNum - 1}-${Date.now()}`,
-      originalIndex: pageNum - 1, // 0-based, matches pdf-lib's API
+      originalIndex: pageNum - 1,
       url: canvas.toDataURL("image/jpeg", 0.8),
     });
   }
@@ -259,31 +226,77 @@ export const extractImagesFromPdf = async (file, onProgress) => {
   const zip = new JSZip();
 
   for (let i = 1; i <= pdf.numPages; i++) {
-    // Update the UI progress state
     if (onProgress) onProgress(i, pdf.numPages);
 
     const page = await pdf.getPage(i);
-    // Scale 2.0 ensures the exported JPEGs are high-resolution and crisp
+    // A little extra scale keeps the extracted images from looking soft.
     const viewport = page.getViewport({ scale: 2.0 });
 
-    const canvas = document.createElement('canvas');
-    const context = canvas.getContext('2d');
+    const canvas = document.createElement("canvas");
+    const context = canvas.getContext("2d");
     canvas.height = viewport.height;
     canvas.width = viewport.width;
 
     await page.render({ canvasContext: context, viewport }).promise;
 
-    // Convert the canvas to a high-quality JPEG blob
     const blob = await new Promise((resolve) => {
-      canvas.toBlob(resolve, 'image/jpeg', 0.9);
+      canvas.toBlob(resolve, "image/jpeg", 0.9);
     });
 
-    // Add the image to our ZIP archive, padded with zeros (e.g., page-01.jpg)
-    const pageString = i.toString().padStart(pdf.numPages.toString().length, '0');
-    zip.file(`${file.name.replace('.pdf', '')}_page-${pageString}.jpg`, blob);
+    // Pad the page number so the files stay in order when sorted by name.
+    const pageString = i
+      .toString()
+      .padStart(pdf.numPages.toString().length, "0");
+    zip.file(`${file.name.replace(".pdf", "")}_page-${pageString}.jpg`, blob);
   }
 
-  // Generate the final ZIP file
-  const zipBlob = await zip.generateAsync({ type: 'blob' });
+  const zipBlob = await zip.generateAsync({ type: "blob" });
   return zipBlob;
+};
+
+export const convertToGrayscale = async (file, onProgress) => {
+  const arrayBuffer = await file.arrayBuffer();
+  const loadingTask = pdfjsLib.getDocument({ data: arrayBuffer });
+  const pdf = await loadingTask.promise;
+  const bwPdf = await PDFDocument.create();
+
+  for (let i = 1; i <= pdf.numPages; i++) {
+    if (onProgress) onProgress(i, pdf.numPages);
+
+    const page = await pdf.getPage(i);
+    const viewport = page.getViewport({ scale: 2.0 });
+
+    const tempCanvas = document.createElement("canvas");
+    const tempCtx = tempCanvas.getContext("2d");
+    tempCanvas.height = viewport.height;
+    tempCanvas.width = viewport.width;
+    await page.render({ canvasContext: tempCtx, viewport }).promise;
+
+    const finalCanvas = document.createElement("canvas");
+    const finalCtx = finalCanvas.getContext("2d");
+    finalCanvas.height = viewport.height;
+    finalCanvas.width = viewport.width;
+
+    // Let the canvas pipeline handle the grayscale pass for us.
+    finalCtx.filter = "grayscale(100%)";
+    finalCtx.drawImage(tempCanvas, 0, 0);
+
+    const base64Image = finalCanvas.toDataURL("image/jpeg", 0.9);
+    const imageBytes = await fetch(base64Image).then((res) =>
+      res.arrayBuffer(),
+    );
+
+    const embeddedImage = await bwPdf.embedJpg(imageBytes);
+    const { width, height } = embeddedImage.scale(1);
+
+    const newPage = bwPdf.addPage([width, height]);
+    newPage.drawImage(embeddedImage, { x: 0, y: 0, width, height });
+
+    // Release the canvases as we go so large files do not balloon memory use.
+    tempCanvas.width = 0;
+    finalCanvas.width = 0;
+  }
+
+  const pdfBytes = await bwPdf.save();
+  return new Blob([pdfBytes], { type: "application/pdf" });
 };

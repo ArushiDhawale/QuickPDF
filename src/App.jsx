@@ -14,6 +14,7 @@ import { Compress } from "./pages/Compress/Compress";
 import { Rotate } from "./pages/Rotate/Rotate";
 import { Organize } from "./pages/Organize/Organize";
 import { PdfToImage } from "./pages/PDFtoImage/PDFtoImage";
+import { Grayscale } from "./pages/Grayscale/Grayscale";
 
 function App() {
   return (
@@ -32,6 +33,7 @@ function App() {
             <Route path="/rotate" element={<Rotate />} />
             <Route path="/organize" element={<Organize />} />
             <Route path="/pdf-to-image" element={<PdfToImage />} />
+            <Route path="/grayscale" element={<Grayscale />} />
           </Routes>
         </PageContainer>
       </div>
