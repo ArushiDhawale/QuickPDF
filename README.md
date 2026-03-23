@@ -128,12 +128,11 @@ QuickPDF uses [`pdf-lib`](https://pdf-lib.js.org/) — a pure JavaScript library
 
 ## Roadmap
 
-- [ ] Compress PDF — reduce file size without quality loss
-- [ ] Rotate pages — per-page rotation controls  
-- [ ] Reorder pages — visual thumbnail drag interface
-- [ ] Add watermark — text or image overlay
-- [ ] PDF metadata editor — title, author, keywords
-- [ ] PDF → Images — export pages as PNG/JPG
+- [ ] Sign PDF — Local, private e-signature drawing tool
+- [ ] Add Page Numbers — Auto-stamp sequential numbers on footers
+- [ ] Extract Text (OCR) — Pull readable text directly to clipboard
+- [ ] Edit Metadata — Modify Title, Author, and Keywords securely
+- [ ] Protect/Unlock PDF — Add or remove passwords locally
 
 ---
 
