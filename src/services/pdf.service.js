@@ -169,6 +169,24 @@ export const rotatePdf = async (file, rotationAngle) => {
   return new Blob([pdfBytes], { type: "application/pdf" });
 };
 
+// pageRotations is an array of delta-degrees per page, e.g. [90, 0, -90, 180]
+export const rotatePdfPerPage = async (file, pageRotations) => {
+  const arrayBuffer = await file.arrayBuffer();
+  const pdfDoc = await PDFDocument.load(arrayBuffer);
+  const pages = pdfDoc.getPages();
+
+  pages.forEach((page, i) => {
+    const delta = pageRotations[i] ?? 0;
+    if (delta === 0) return;
+    const current = page.getRotation().angle;
+    page.setRotation(degrees(current + delta));
+  });
+
+  const pdfBytes = await pdfDoc.save();
+  return new Blob([pdfBytes], { type: "application/pdf" });
+};
+
+
 export const getPdfThumbnails = async (file) => {
   if (!file) throw new Error("No file provided.");
 
