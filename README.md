@@ -167,3 +167,6 @@ If you discover a vulnerability, please open a [GitHub Security Advisory](https:
 ## License
 
 MIT © [Sourav Jha](https://github.com/jhasourav07)
+
+
+### This project is an official participant in Nexus Spring of Code (NSoC) 2026.
