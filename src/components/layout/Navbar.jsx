@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from "react";
 import { Link } from "react-router-dom";
-import { FileText, Menu, X, LogOut, Crown, Copy, Check, Star, ChevronDown, Edit, Shuffle, Image, File, Lock, Palette } from "lucide-react";
+import { FileText, Menu, X, LogOut, Crown, Copy, Check, Star, ChevronDown } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useAccount, useDisconnect } from "wagmi";
 import { ConnectButton } from "@rainbow-me/rainbowkit";
@@ -13,7 +13,7 @@ function truncate(address) {
 
 function WalletMenu({ address, isPremium }) {
   const { disconnect } = useDisconnect();
-  const [open, setOpen]     = useState(false);
+  const [open, setOpen] = useState(false);
   const [copied, setCopied] = useState(false);
   const ref = useRef(null);
 
@@ -104,65 +104,27 @@ function WalletMenu({ address, isPremium }) {
   );
 }
 
-// Grouped tools for dropdown menu
-const toolCategories = [
-  {
-    name: "Edit",
-    icon: <Edit className="w-4 h-4" />,
-    tools: [
-      { name: "Merge", path: "/merge" },
-      { name: "Split", path: "/split" },
-      { name: "Rotate", path: "/rotate" },
-      { name: "Page Numbers", path: "/page-numbers" },
-    ]
-  },
-  {
-    name: "Convert",
-    icon: <Image className="w-4 h-4" />,
-    tools: [
-      { name: "Image To PDF", path: "/image-to-pdf" },
-      { name: "PDF To Image", path: "/pdf-to-image" },
-    ]
-  },
-  {
-    name: "Optimize",
-    icon: <File className="w-4 h-4" />,
-    tools: [
-      { name: "Compress", path: "/compress" },
-      { name: "Grayscale", path: "/grayscale" },
-    ]
-  },
-  {
-    name: "Security",
-    icon: <Lock className="w-4 h-4" />,
-    tools: [
-      { name: "Watermark", path: "/watermark" },
-    ]
-  },
-];
-
-// Dropdown Menu Component
-function ToolsDropdown() {
+// Edit Dropdown Component
+function EditDropdown() {
   const [isOpen, setIsOpen] = useState(false);
   const dropdownRef = useRef(null);
 
-  useEffect(() => {
-    function handleClickOutside(event) {
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
-        setIsOpen(false);
-      }
-    }
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, []);
+  const tools = [
+    { name: "Merge", path: "/merge" },
+    { name: "Split", path: "/split" },
+    { name: "Rotate", path: "/rotate" },
+    { name: "Page Numbers", path: "/page-numbers" },
+  ];
 
   return (
-    <div className="relative" ref={dropdownRef}>
-      <button
-        onClick={() => setIsOpen(!isOpen)}
-        className="flex items-center gap-1.5 text-sm font-medium text-zinc-400 hover:text-white transition-colors whitespace-nowrap group"
-      >
-        Tools
+    <div
+      className="relative"
+      ref={dropdownRef}
+      onMouseEnter={() => setIsOpen(true)}
+      onMouseLeave={() => setIsOpen(false)}
+    >
+      <button className="flex items-center gap-1.5 text-sm font-medium text-zinc-400 hover:text-white transition-colors whitespace-nowrap group">
+        Edit
         <ChevronDown className={`w-4 h-4 transition-transform duration-200 ${isOpen ? "rotate-180" : ""}`} />
       </button>
 
@@ -172,32 +134,164 @@ function ToolsDropdown() {
             initial={{ opacity: 0, y: -10, scale: 0.95 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: -10, scale: 0.95 }}
-            transition={{ duration: 0.2, ease: "easeOut" }}
-            className="absolute left-0 mt-3 w-64 bg-[#0a0a0a] backdrop-blur-md border border-white/10 rounded-2xl shadow-2xl overflow-hidden z-50"
+            transition={{ duration: 0.15 }}
+            className="absolute left-0 mt-2 w-44 bg-[#0a0a0a] backdrop-blur-md border border-white/10 rounded-xl shadow-2xl overflow-hidden z-50"
           >
             <div className="py-2">
-              {toolCategories.map((category, idx) => (
-                <div key={idx}>
-                  <div className="px-3 py-2">
-                    <div className="flex items-center gap-2 text-xs font-semibold text-zinc-500 uppercase tracking-wider">
-                      {category.icon}
-                      {category.name}
-                    </div>
-                  </div>
-                  {category.tools.map((tool) => (
-                    <Link
-                      key={tool.name}
-                      to={tool.path}
-                      onClick={() => setIsOpen(false)}
-                      className="block px-3 py-2 ml-2 text-sm text-zinc-400 hover:text-white hover:bg-white/5 rounded-lg transition-all"
-                    >
-                      {tool.name}
-                    </Link>
-                  ))}
-                  {idx < toolCategories.length - 1 && (
-                    <div className="my-1 mx-3 h-px bg-white/10" />
-                  )}
-                </div>
+              {tools.map((tool) => (
+                <Link
+                  key={tool.name}
+                  to={tool.path}
+                  className="block px-4 py-2 text-sm text-zinc-400 hover:text-white hover:bg-white/5 transition-all"
+                >
+                  {tool.name}
+                </Link>
+              ))}
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </div>
+  );
+}
+
+// Convert Dropdown Component
+function ConvertDropdown() {
+  const [isOpen, setIsOpen] = useState(false);
+  const dropdownRef = useRef(null);
+
+  const tools = [
+    { name: "Image To PDF", path: "/image-to-pdf" },
+    { name: "PDF To Image", path: "/pdf-to-image" },
+  ];
+
+  return (
+    <div
+      className="relative"
+      ref={dropdownRef}
+      onMouseEnter={() => setIsOpen(true)}
+      onMouseLeave={() => setIsOpen(false)}
+    >
+      <button className="flex items-center gap-1.5 text-sm font-medium text-zinc-400 hover:text-white transition-colors whitespace-nowrap group">
+        Convert
+        <ChevronDown className={`w-4 h-4 transition-transform duration-200 ${isOpen ? "rotate-180" : ""}`} />
+      </button>
+
+      <AnimatePresence>
+        {isOpen && (
+          <motion.div
+            initial={{ opacity: 0, y: -10, scale: 0.95 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: -10, scale: 0.95 }}
+            transition={{ duration: 0.15 }}
+            className="absolute left-0 mt-2 w-44 bg-[#0a0a0a] backdrop-blur-md border border-white/10 rounded-xl shadow-2xl overflow-hidden z-50"
+          >
+            <div className="py-2">
+              {tools.map((tool) => (
+                <Link
+                  key={tool.name}
+                  to={tool.path}
+                  className="block px-4 py-2 text-sm text-zinc-400 hover:text-white hover:bg-white/5 transition-all"
+                >
+                  {tool.name}
+                </Link>
+              ))}
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </div>
+  );
+}
+
+// Optimize Dropdown Component
+function OptimizeDropdown() {
+  const [isOpen, setIsOpen] = useState(false);
+  const dropdownRef = useRef(null);
+
+  const tools = [
+    { name: "Compress", path: "/compress" },
+    { name: "Grayscale", path: "/grayscale" },
+  ];
+
+  return (
+    <div
+      className="relative"
+      ref={dropdownRef}
+      onMouseEnter={() => setIsOpen(true)}
+      onMouseLeave={() => setIsOpen(false)}
+    >
+      <button className="flex items-center gap-1.5 text-sm font-medium text-zinc-400 hover:text-white transition-colors whitespace-nowrap group">
+        Optimize
+        <ChevronDown className={`w-4 h-4 transition-transform duration-200 ${isOpen ? "rotate-180" : ""}`} />
+      </button>
+
+      <AnimatePresence>
+        {isOpen && (
+          <motion.div
+            initial={{ opacity: 0, y: -10, scale: 0.95 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: -10, scale: 0.95 }}
+            transition={{ duration: 0.15 }}
+            className="absolute left-0 mt-2 w-44 bg-[#0a0a0a] backdrop-blur-md border border-white/10 rounded-xl shadow-2xl overflow-hidden z-50"
+          >
+            <div className="py-2">
+              {tools.map((tool) => (
+                <Link
+                  key={tool.name}
+                  to={tool.path}
+                  className="block px-4 py-2 text-sm text-zinc-400 hover:text-white hover:bg-white/5 transition-all"
+                >
+                  {tool.name}
+                </Link>
+              ))}
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </div>
+  );
+}
+
+// Security Dropdown Component
+function SecurityDropdown() {
+  const [isOpen, setIsOpen] = useState(false);
+  const dropdownRef = useRef(null);
+
+  const tools = [
+    { name: "Watermark", path: "/watermark" },
+  ];
+
+  return (
+    <div
+      className="relative"
+      ref={dropdownRef}
+      onMouseEnter={() => setIsOpen(true)}
+      onMouseLeave={() => setIsOpen(false)}
+    >
+      <button className="flex items-center gap-1.5 text-sm font-medium text-zinc-400 hover:text-white transition-colors whitespace-nowrap group">
+        Security
+        <ChevronDown className={`w-4 h-4 transition-transform duration-200 ${isOpen ? "rotate-180" : ""}`} />
+      </button>
+
+      <AnimatePresence>
+        {isOpen && (
+          <motion.div
+            initial={{ opacity: 0, y: -10, scale: 0.95 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: -10, scale: 0.95 }}
+            transition={{ duration: 0.15 }}
+            className="absolute left-0 mt-2 w-44 bg-[#0a0a0a] backdrop-blur-md border border-white/10 rounded-xl shadow-2xl overflow-hidden z-50"
+          >
+            <div className="py-2">
+              {tools.map((tool) => (
+                <Link
+                  key={tool.name}
+                  to={tool.path}
+                  className="block px-4 py-2 text-sm text-zinc-400 hover:text-white hover:bg-white/5 transition-all"
+                >
+                  {tool.name}
+                </Link>
               ))}
             </div>
           </motion.div>
@@ -213,16 +307,16 @@ export function Navbar() {
   const { isPremium } = useSubscription();
 
   const navLinks = [
-    { name: "Merge",        path: "/merge"        },
-    { name: "Split",        path: "/split"        },
-    { name: "Watermark",    path: "/watermark"    },
+    { name: "Merge", path: "/merge" },
+    { name: "Split", path: "/split" },
+    { name: "Watermark", path: "/watermark" },
     { name: "Image To PDF", path: "/image-to-pdf" },
-    { name: "Compress",     path: "/compress"     },
-    { name: "Rotate",       path: "/rotate"       },
-    { name: "Organize",     path: "/organize"     },
+    { name: "Compress", path: "/compress" },
+    { name: "Rotate", path: "/rotate" },
+    { name: "Organize", path: "/organize" },
     { name: "PDF To Image", path: "/pdf-to-image" },
-    { name: "Grayscale",     path: "/grayscale"    },
-    { name: "Page Numbers",  path: "/page-numbers" },
+    { name: "Grayscale", path: "/grayscale" },
+    { name: "Page Numbers", path: "/page-numbers" },
   ];
 
   return (
@@ -237,9 +331,12 @@ export function Navbar() {
             <span className="font-bold text-xl tracking-tight text-white">QuickPDF</span>
           </Link>
 
-          {/* Desktop Navigation - REPLACED horizontal list with dropdown */}
+          {/* Desktop Navigation - 4 separate hover dropdowns */}
           <div className="hidden lg:flex gap-6 flex-1 justify-center">
-            <ToolsDropdown />
+            <EditDropdown />
+            <ConvertDropdown />
+            <OptimizeDropdown />
+            <SecurityDropdown />
           </div>
 
           <div className="flex items-center gap-3 shrink-0">
