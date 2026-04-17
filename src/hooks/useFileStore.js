@@ -1,5 +1,3 @@
-/* eslint-disable */
-// prettier-ignore
 import { useState, useEffect, useRef } from "react";
 
 let _db = null;
