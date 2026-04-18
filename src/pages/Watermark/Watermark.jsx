@@ -197,16 +197,20 @@ export function Watermark() {
             />
 
             <div className="mt-auto pt-4 border-t border-white/10">
-              <a
-                href={previewUrl}
-                download={`QuickPDF_Watermarked_${Date.now()}.pdf`}
-                className="block"
+              <Button
+                className="w-full"
+                onClick={() => {
+                  const link = document.createElement("a");
+                  link.href = previewUrl;
+                  link.download = `QuickPDF_Watermarked_${Date.now()}.pdf`;
+                  document.body.appendChild(link);
+                  link.click();
+                  document.body.removeChild(link);
+                }}
               >
-                <Button className="w-full">
-                  <Download className="w-5 h-5 mr-2" />
-                  Download PDF
-                </Button>
-              </a>
+                <Download className="w-5 h-5 mr-2" />
+                Download PDF
+              </Button>
             </div>
           </div>
         )}
